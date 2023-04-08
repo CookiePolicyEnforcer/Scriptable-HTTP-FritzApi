@@ -1,4 +1,4 @@
-# Scriptable-FritzApi
+# Scriptable-HTTP-FritzApi
 Access your AVM Fritz!Box with [Scriptable](https://scriptable.app)! This script enables you to communicate with the AHA-HTTP interface using the commands in the [official documentation](https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/AHA-HTTP-Interface.pdf) as input arguments. It handles the login process through a user-friendly interface and automatically generates the session ID (sid).
 
 ## Features
