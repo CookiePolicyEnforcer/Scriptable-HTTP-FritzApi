@@ -1,14 +1,16 @@
 /**
- * This script enables you to communicate with the AHA-HTTP interface using the commands in the official documentation as input arguments. 
- * It handles the login process through a user-friendly interface and automatically generates the session ID (sid).
+ * This script enables you to communicate with the AHA-HTTP interface using the commands in the official documentation 
+ * as input arguments. It handles the login process through a user-friendly interface and automatically generates the 
+ * session ID (sid).
  *
  * Usage:
  * Pass the command and all required parameters (except sid) as arguments to the script.
- * 
+ *
  * There are two methods to run this script:
- * 1. Set TEST_ARGS_ENABLED = true and provide an object for TEST_ARGS that contains the command and all required parameters.
- * 2. Use the URL scheme with this syntax: scriptable:///run?scriptName=[Name]&switchcmd=[command]&ain=[ain]&param=[param]
- *  
+ * 1. Set TEST_ARGS_ENABLED = true and provide an object for TEST_ARGS that contains the command and required parameters
+ * 2. Use the URL scheme with the following syntax: 
+ *    scriptable:///run?scriptName=[Name]&switchcmd=[command]&ain=[ain]&param=[param]
+ *
  * AVM documentation: https://avm.de/service/schnittstellen/
  *
  * Author: CookiePolicyEnforcer
