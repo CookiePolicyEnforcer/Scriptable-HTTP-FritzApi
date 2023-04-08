@@ -1,14 +1,14 @@
 /**
- * This script enables communication with the AHA HTTP interface using the commands from the official documentation
- * as input arguments. It manages the login through a user-friendly login UI and generates the session ID (sid).
+ * This script enables you to communicate with the AHA-HTTP interface using the commands in the official documentation as input arguments. 
+ * It handles the login process through a user-friendly interface and automatically generates the session ID (sid).
  *
  * Usage:
  * Pass the command and all required parameters (except sid) as arguments to the script.
- * Use the URL scheme with this syntax: scriptable:///run?scriptName=[Name]&switchcmd=[command]&ain=[ain]&param=[param]
- *
- * Example: scriptable:///run?scriptName=FritzApi&switchcmd=sethkrtsoll&ain=123456789123&param=16
- * This sets the target temperature of the thermostat with the AIN 123456789123 to 8°C (Fritz format).
- *
+ * 
+ * There are two methods to run this script:
+ * 1. Set TEST_ARGS_ENABLED = true and provide an object for TEST_ARGS that contains the command and all required parameters.
+ * 2. Use the URL scheme with this syntax: scriptable:///run?scriptName=[Name]&switchcmd=[command]&ain=[ain]&param=[param]
+ *  
  * AVM documentation: https://avm.de/service/schnittstellen/
  *
  * Author: CookiePolicyEnforcer
@@ -21,21 +21,21 @@ const CRYPTO = importModule('Crypto-js')    // requires Crypto-js in your Script
 const BOX_URL = 'http://fritz.box'
 const LOGIN_SID_ROUTE = '/login_sid.lua?version=2'
 const COMMAND_ROUTE = '/webservices/homeautoswitch.lua?'
+const SCRIPT_ID = "Fritz"                   // Used to store credentials -> must be unique for this script
 
 // Settings -> change to your needs
-const SCRIPT_ID = "Fritz"                   // Used to store credentials -> change to something unique
 const REMEMBER_CREDENTIALS = true           // true = credentials will be stored in the keychain
 const SHOW_NOTIFICATIONS = true             // true = errors and responses will be shown as notifications
 const USE_CELSIUS_ON_OFF = true             // true = use Celsius and "ON"/"OFF" (case-insensitive) as input and output
                                             // false = use Fritz format (16 - 56 (≤8°C - ≥28°C); 253 = OFF; 254 = ON)
 const TEST_ARGS_ENABLED = false             // true = TEST_ARGS will be used as arguments
-const TEST_ARGS = { ain: '123456789123', switchcmd: 'sethkrtsoll', param: '15' }
+const TEST_ARGS = { ain: '012340000123', switchcmd: 'sethkrtsoll', param: '19.5' }
 
 async function main () {
   try {
     let arguments = getInputArgs()
     arguments = parseArgs(arguments)
-    showNotification(JSON.stringify(arguments, null, 2))
+    
     // Authentication
     const loginManager = new LoginManager(SCRIPT_ID, REMEMBER_CREDENTIALS)
     const credentials = await loginManager.getCredentials()
