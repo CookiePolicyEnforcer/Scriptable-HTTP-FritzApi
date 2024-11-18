@@ -393,9 +393,13 @@ function parseResponse (response, switchcmd) {
   if (['gettemperature', 'sethkrtsoll', 'gethkrtsoll', 'gethkrkomfort', 'gethkrabsenk'].includes(switchcmd)
     && USE_CELSIUS_ON_OFF) {
     response = fritzToCelsiusOnOff(response)
+    if (typeof response === 'number') {
+      response = response + '°C'
+    }
+    response = "Heater set to " + response
   }
 
-  return response
+  return "Response: " + response
 }
 
 
