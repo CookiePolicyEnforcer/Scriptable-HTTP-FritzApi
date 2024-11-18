@@ -1,6 +1,6 @@
 /**
- * This script enables you to communicate with the AHA-HTTP interface using the commands in the official documentation 
- * as input arguments. It handles the login process through a user-friendly interface and automatically generates the 
+ * This script enables you to communicate with the AHA-HTTP interface using the commands in the official documentation
+ * as input arguments. It handles the login process through a user-friendly interface and automatically generates the
  * session ID (sid).
  *
  * Usage:
@@ -8,7 +8,7 @@
  *
  * There are two methods to run this script:
  * 1. Set TEST_ARGS_ENABLED = true and provide an object for TEST_ARGS that contains the command and required parameters
- * 2. Use the URL scheme with the following syntax: 
+ * 2. Use the URL scheme with the following syntax:
  *    scriptable:///run?scriptName=[Name]&switchcmd=[command]&ain=[ain]&param=[param]
  *
  * AVM documentation: https://avm.de/service/schnittstellen/
@@ -19,25 +19,25 @@
  */
 
 // Don't change if not necessary
-const CRYPTO = importModule('Crypto-js')    // requires Crypto-js in your Scriptable library
+const CRYPTO = importModule('Crypto-js')       // requires Crypto-js in your Scriptable library
 const BOX_URL = 'http://fritz.box'
 const LOGIN_SID_ROUTE = '/login_sid.lua?version=2'
 const COMMAND_ROUTE = '/webservices/homeautoswitch.lua?'
-const SCRIPT_ID = "Fritz"                   // Used to store credentials -> must be unique for this script
+const SCRIPT_ID = "Fritz"               // Used to store credentials -> must be unique for this script
 
 // Settings -> change to your needs
-const REMEMBER_CREDENTIALS = true           // true = credentials will be stored in the keychain
-const SHOW_NOTIFICATIONS = true             // true = errors and responses will be shown as notifications
-const USE_CELSIUS_ON_OFF = true             // true = use Celsius and "ON"/"OFF" (case-insensitive) as input and output
-                                            // false = use Fritz format (16 - 56 (≤8°C - ≥28°C); 253 = OFF; 254 = ON)
-const TEST_ARGS_ENABLED = false             // true = TEST_ARGS will be used as arguments
+const REMEMBER_CREDENTIALS = true     // true = credentials will be stored in the keychain
+const SHOW_NOTIFICATIONS = true       // true = errors and responses will be shown as notifications
+const USE_CELSIUS_ON_OFF = true       // true = use Celsius and "ON"/"OFF" (case-insensitive) as input and output
+                                               // false = use Fritz format (16 - 56 (≤8°C - ≥28°C); 253 = OFF; 254 = ON)
+const TEST_ARGS_ENABLED = false       // true = TEST_ARGS will be used as arguments
 const TEST_ARGS = { ain: '012340000123', switchcmd: 'sethkrtsoll', param: '19.5' }
 
 async function main () {
   try {
     let arguments = getInputArgs()
     arguments = parseArgs(arguments)
-    
+
     // Authentication
     const loginManager = new LoginManager(SCRIPT_ID, REMEMBER_CREDENTIALS)
     const credentials = await loginManager.getCredentials()
@@ -374,7 +374,7 @@ function parseArgs (arguments) {
   // sethkrtsoll requires a special temperature format (numbers between 16 and 56; 253 = OFF; 254 = ON)
   if (arguments.switchcmd === 'sethkrtsoll' && USE_CELSIUS_ON_OFF) {
     if (arguments.param != null) {
-      let param = arguments.param.toLowerCase()
+      let param = arguments.param.toString().toLowerCase()
 
       if (param === 'off' || param === '0') { param = 253 } else if (param === 'on') { param = 254 }
 
@@ -434,6 +434,7 @@ function celsiusOnOffToFritz (celsius_temp) {
  * 253 and 254 are converted to "OFF" and "ON".
  */
 function fritzToCelsiusOnOff (fritz_temp) {
+  fritz_temp = parseInt(fritz_temp)
   let converted = fritz_temp
   if (fritz_temp !== 253 && fritz_temp !== 254) {
     converted = (converted - 16) * 0.5 + 8
@@ -457,6 +458,5 @@ function showNotification (message) {
     console.log('Notification: ' + message)
   }
 }
-
 
 await main()
