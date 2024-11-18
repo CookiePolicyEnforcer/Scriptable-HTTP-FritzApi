@@ -143,11 +143,12 @@ class LoginManager {
         let remember = await this.showRememberAlert()
         if (remember) {
           this.saveCredentials(user, pass)
-          return
         }
       }
     }
-    this.deleteCredentials()
+    else {
+      this.deleteCredentials()
+    }
   }
 
   // Displays an alert asking to remember credentials. Returns true if the user presses 'yes', false otherwise.
