@@ -19,11 +19,12 @@
  */
 
 // Don't change if not necessary
-const CRYPTO = importModule('Crypto-js')       // requires Crypto-js in your Scriptable library
+const CRYPTO = importModule('Crypto-js')         // requires Crypto-js in your Scriptable library
 const BOX_URL = 'http://fritz.box'
 const LOGIN_SID_ROUTE = '/login_sid.lua?version=2'
 const COMMAND_ROUTE = '/webservices/homeautoswitch.lua?'
-const SCRIPT_ID = "Fritz"               // Used to store credentials -> must be unique for this script
+const SCRIPT_ID = "Fritz"                 // Used to store credentials -> must be unique for this script
+const SID_EXPIRATION_MINUTES = 14       // Session ID expiration time in minutes
 
 // Settings -> change to your needs
 const REMEMBER_CREDENTIALS = true     // true = credentials will be stored in the keychain
@@ -43,7 +44,8 @@ async function main () {
     const credentials = await loginManager.getCredentials()
     if (credentials === undefined) return undefined
 
-    const sid = await new SessionID().create(credentials.user, credentials.pass)
+    const sidManager = new SessionIDManager(SCRIPT_ID)
+    const sid = await sidManager.getSID(credentials.user, credentials.pass)
 
     // If REMEMBER_CREDENTIALS = true -> Ask to remember credentials; Else: delete saved credentials
     await loginManager.updateStoredCredentials(credentials.user, credentials.pass)
@@ -204,39 +206,49 @@ class LoginManager {
 
 
 // Manages the login process and returns the session id
-class SessionID {
-  async create (user, pass) {
-    try {
-      const state = await this.getLoginState()
+class SessionIDManager {
+  constructor(scriptID) {
+    this.SCRIPT_ID = scriptID
+  }
 
-      let challengeResponse
-      if (state.isPbkdf2) {
-        console.log('PBKDF2 supported')
-        challengeResponse = this.calculatePbkdf2Response(state.challenge, pass)
-      } else {
-        console.log('Falling back to MD5')
-        challengeResponse = this.calculateMd5Response(state.challenge, pass)
-      }
-      if (state.blockTime > 0) {
-        console.log(`Waiting for ${state.blockTime} seconds...`);
-        showNotification(`Waiting for ${state.blockTime} seconds...`)
+  async getSID (user, pass) {
+    if (this.getRememberedSID() !== null) {
+      return this.getRememberedSID()
+    }
+    else {
+      try {
+        const state = await this.getLoginState()
 
-        await new Promise(resolve => {
-          Timer.schedule(state.blockTime * 1000, false, () => {
-            resolve();
+        let challengeResponse
+        if (state.isPbkdf2) {
+          console.log('PBKDF2 supported')
+          challengeResponse = this.calculatePbkdf2Response(state.challenge, pass)
+        } else {
+          console.log('Falling back to MD5')
+          challengeResponse = this.calculateMd5Response(state.challenge, pass)
+        }
+        if (state.blockTime > 0) {
+          console.log(`Waiting for ${state.blockTime} seconds...`);
+          showNotification(`Waiting for ${state.blockTime} seconds...`)
+
+          await new Promise(resolve => {
+            Timer.schedule(state.blockTime * 1000, false, () => {
+              resolve();
+            });
           });
-        });
-      }
+        }
 
-      const sid = await this.sendResponse(user, challengeResponse)
-      if (sid === '0000000000000000') {
-        throw new Error('Wrong username or password')
-      }
+        const sid = await this.sendResponse(user, challengeResponse)
+        if (sid === '0000000000000000') {
+          throw new Error('Wrong username or password')
+        }
 
-      return sid
-    } catch (err) {
-      const newErrorMessage = 'Failed to login! ' + err.message
-      throw new Error(newErrorMessage)
+        this.saveSID(sid)
+        return sid
+      } catch (err) {
+        const newErrorMessage = 'Failed to log in! ' + err.message
+        throw new Error(newErrorMessage)
+      }
     }
   }
 
@@ -338,6 +350,32 @@ class SessionID {
     xmlParser.parse()
 
     return sid
+  }
+
+  saveSID (sid) {
+    Keychain.set(this.SCRIPT_ID + "sid", sid)
+    Keychain.set(this.SCRIPT_ID + "sidDate", new Date().toISOString())
+  }
+
+  getRememberedSID () {
+    if (Keychain.contains(this.SCRIPT_ID + "sid") && Keychain.contains(this.SCRIPT_ID + "sidDate")) {
+      let sid = Keychain.get(this.SCRIPT_ID + "sid")
+      let sidDate = Keychain.get(this.SCRIPT_ID + "sidDate")
+
+      // Check if sid is expired
+      let currentDate = new Date()
+      let sidCreationDate = new Date(sidDate)
+      let diff = (currentDate - sidCreationDate) / 60000 // Difference in minutes
+      if (diff > SID_EXPIRATION_MINUTES) {
+        sid = null
+        Keychain.remove(this.SCRIPT_ID + "sid")
+        Keychain.remove(this.SCRIPT_ID + "sidDate")
+      }
+      return sid
+    }
+    else {
+      return null
+    }
   }
 }
 
